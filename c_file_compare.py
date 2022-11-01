@@ -3,11 +3,8 @@ import re
 import sys
 import glob
 
-import ipdb
 from colorama import Fore
 
-TEST_FOLDER = "/home/keren.guez/ex0/ex0/part2/"
-C_FOLDER_PATH = "/home/keren.guez/ex0/ex0/part2/"
 COMPILED_FILE_PATH = "/tmp/sample_file"
 GCC_FLAGS = "-std=c99 -Wall -Werror -pedantic-errors"
 
