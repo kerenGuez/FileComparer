@@ -122,47 +122,43 @@ def test_single_c_file(all_files_in_folder, c_file_path, the_pattern_mode, *args
     return results
 
 
-def get_user_input():
+def get_user_input(config_file=None):
     the_hw_num, the_q_num = None, None
-    the_test_folder = input("Enter the folder containing the test's inputs and expected outputs: \n")
-    the_pattern_mode = input(f"""Enter tests pattern : 
-                             1 : hw<hw_num>q<question_num><in/out><test_num>.txt, e.g: (hw1q1in1.txt)
-                             2 : <words><test_num>.<in/out>, e.g: (test1.in)\n""")
-    if the_pattern_mode == 1:
-        the_hw_num = input("Enter the hw number")
-        the_q_num = input("Enter the q number")
-
-    the_c_folder = input("Enter the folder containing your C file: \n")
-    the_c_file = input("Enter the name of your C file: \n")
-    change_flags = input(f"""The default gcc flags are : {GCC_FLAGS}.
-        would you like to change them?
-        press 1 to change, and any key to continue\n""")
-
-    if change_flags == 1:
-        the_gcc_flags = input("Enter your custom flags")
+    if config_file:
+        with open(text_file_path, "r") as file:
+            the_content = [line.replace("\n", "") for line in file.readlines()]
+            the_test_folder, the_pattern_mode, the_c_folder, the_c_file, the_gcc_flags, *rest = the_content
+            if len(rest) >= 2:
+                the_hw_num, the_q_num = rest
     else:
-        the_gcc_flags = GCC_FLAGS
+        the_test_folder = input("Enter the folder containing the test's inputs and expected outputs: \n")
+        the_pattern_mode = input(f"""Enter tests pattern : 
+                                 1 : hw<hw_num>q<question_num><in/out><test_num>.txt, e.g: (hw1q1in1.txt)
+                                 2 : <words><test_num>.<in/out>, e.g: (test1.in)\n""")
+        if the_pattern_mode == 1:
+            the_hw_num = input("Enter the hw number")
+            the_q_num = input("Enter the q number")
+
+        the_c_folder = input("Enter the folder containing your C file: \n")
+        the_c_file = input("Enter the name of your C file: \n")
+        change_flags = input(f"""The default gcc flags are : {GCC_FLAGS}.
+            would you like to change them?
+            press 1 to change, and any key to continue\n""")
+
+        if change_flags == 1:
+            the_gcc_flags = input("Enter your custom flags")
+        else:
+            the_gcc_flags = GCC_FLAGS
 
     return the_test_folder, the_pattern_mode, the_c_folder, the_c_file, the_gcc_flags, the_hw_num, the_q_num
 
 
 if __name__ == '__main__':
+    text_file_path = None
     if len(sys.argv) == 2:
         text_file_path = sys.argv[1]
-        with open(text_file_path, "r") as file:
-            content = [line.replace("\n", "") for line in file.readlines()]
-            test_folder = content[0]
-            pattern_mode = content[1]
-            c_folder = content[2]
-            c_file = content[3]
-            gcc_flags = content[4]
-            if len(content) > 5:
-                hw_num = content[5]
-                q_num = content[6]
-            else:
-                hw_num, q_num = None, None
-    else:
-        test_folder, pattern_mode, c_folder, c_file, gcc_flags, hw_num, q_num = get_user_input()
+
+    test_folder, pattern_mode, c_folder, c_file, gcc_flags, hw_num, q_num = get_user_input(text_file_path)
 
     all_the_files_in_folder = glob.glob(f"{test_folder}*")
     all_the_files_c_folder = glob.glob(f"{c_folder}*")
