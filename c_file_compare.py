@@ -6,25 +6,29 @@ import glob
 import ipdb
 from colorama import Fore
 
-
 TEST_FOLDER = "/home/keren.guez/ex0/ex0/part2/"
-# TEST_FOLDER = r"/mnt/c/Users/keren/Downloads/websiteTests/toPublish/"
-# TEST_FOLDER = "/mnt/c/Users/keren/Downloads/hw1_more_tests/"
-# C_FILE_PATH = "/mnt/c/Users/keren/Pictures/Documents/Technion/introduction_to_cs/h3/hw3q1.c"
-# C_FOLDER_PATH = "/mnt/c/Users/keren/Pictures/Documents/Technion/introduction_to_cs/hw3/alonHW/"
 C_FOLDER_PATH = "/home/keren.guez/ex0/ex0/part2/"
 COMPILED_FILE_PATH = "/tmp/sample_file"
 GCC_FLAGS = "-std=c99 -Wall -Werror -pedantic-errors"
 
 
-def generic_pattern(type_pattern, hw_number, question_number, input_number=None):
+def generic_pattern(type_pattern, input_number, hw_number, question_number):
     input_number = input_number or r"\d+"
     return rf"^hw{hw_number}q{question_number}{type_pattern}({input_number})[.]txt$"
 
 
-def more_generic_patt(type_pattern, input_number=None):
+def more_generic_patt(type_pattern, input_number, *args):
     input_number = input_number or r"\d+"
     return rf".+({input_number})\.{type_pattern}"
+
+
+def get_pattern(choice, type_pattern, input_number, *args):
+    switch_choice = {
+        "1": generic_pattern,
+        "2": more_generic_patt
+    }
+
+    return switch_choice[choice](type_pattern, input_number, *args)
 
 
 def get_c_file_pattern():
@@ -91,18 +95,16 @@ def test_file_diff(actual_output_file_path, expected_output_file_path):
     return is_equal
 
 
-def test_single_c_file(all_files_in_folder, hw_number, question_number, c_file_path, more_generic=None):
+def test_single_c_file(all_files_in_folder, c_file_path, the_pattern_mode, *args):
     results = []
     # find and iterate through the test input files
-    input_pattern = generic_pattern(
-        "in", hw_number, question_number) if not more_generic else more_generic_patt("in")
+    input_pattern = get_pattern(the_pattern_mode, "in", None, *args)
     input_files_path = get_file_names(all_files_in_folder, input_pattern)
     for input_file, match in input_files_path.items():
         print(f"{Fore.LIGHTBLUE_EX}Checking {os.path.basename(input_file)}{Fore.WHITE}")
         input_num = match.groups()[0]
         # get the corresponding output file
-        output_pattern = generic_pattern("out", hw_number, question_number, input_num) \
-            if not more_generic else more_generic_patt("out", input_num)
+        output_pattern = get_pattern(the_pattern_mode, "out", input_num, *args)
         expected_output_file_path = next(
             iter(get_file_names(all_files_in_folder, output_pattern)))
         # compile the c file you want to check, run it with the input file and put the result in
@@ -123,32 +125,52 @@ def test_single_c_file(all_files_in_folder, hw_number, question_number, c_file_p
     return results
 
 
-def test_c_files(all_files_in_folder, all_files_c_folder, hw_number=None, question_number=None):
-    results = []
+def get_user_input():
+    the_hw_num, the_q_num = None, None
+    the_test_folder = input("Enter the folder containing the test's inputs and expected outputs: \n")
+    the_pattern_mode = input(f"""Enter tests pattern : 
+                             1 : hw<hw_num>q<question_num><in/out><test_num>.txt, e.g: (hw1q1in1.txt)
+                             2 : <words><test_num>.<in/out>, e.g: (test1.in)\n""")
+    if the_pattern_mode == 1:
+        the_hw_num = input("Enter the hw number")
+        the_q_num = input("Enter the q number")
 
-    c_file_pattern = get_c_file_pattern()
-    c_file_paths = get_file_names(all_files_c_folder, c_file_pattern)
-    if not hw_number or not question_number:
-        for c_file, match in c_file_paths.items():
-            hw_number, question_number = match.groups()
-            test_single_c_file(all_files_in_folder,
-                               hw_number, question_number, c_file)
+    the_c_folder = input("Enter the folder containing your C file: \n")
+    the_c_file = input("Enter the name of your C file: \n")
+    change_flags = input(f"""The default gcc flags are : {GCC_FLAGS}.
+        would you like to change them?
+        press 1 to change, and any key to continue\n""")
+
+    if change_flags == 1:
+        the_gcc_flags = input("Enter your custom flags")
     else:
-        test_single_c_file(all_files_in_folder, hw_number,
-                           question_number, all_files_c_folder)
+        the_gcc_flags = GCC_FLAGS
 
-    return len(results) and all(results)
+    return the_test_folder, the_pattern_mode, the_c_folder, the_c_file, the_gcc_flags, the_hw_num, the_q_num
 
 
 if __name__ == '__main__':
-    #change
-    all_the_files_in_folder = glob.glob(f"{TEST_FOLDER}*")
-    all_the_files_c_folder = glob.glob(f"{C_FOLDER_PATH}*")
+    if len(sys.argv) == 2:
+        text_file_path = sys.argv[1]
+        with open(text_file_path, "r") as file:
+            content = [line.replace("\n", "") for line in file.readlines()]
+            test_folder = content[0]
+            pattern_mode = content[1]
+            c_folder = content[2]
+            c_file = content[3]
+            gcc_flags = content[4]
+            if len(content) > 5:
+                hw_num = content[5]
+                q_num = content[6]
+            else:
+                hw_num, q_num = None, None
+    else:
+        test_folder, pattern_mode, c_folder, c_file, gcc_flags, hw_num, q_num = get_user_input()
 
-    if len(sys.argv) == 3:
-        _, the_hw_number, the_question_number = sys.argv
-    # print(test_c_files(all_the_files_in_folder, all_the_files_c_folder, the_hw_number, the_question_number))
-    # print(test_c_files(all_the_files_in_folder, all_the_files_c_folder))
+    all_the_files_in_folder = glob.glob(f"{test_folder}*")
+    all_the_files_c_folder = glob.glob(f"{c_folder}*")
 
-    print(test_single_c_file(all_the_files_in_folder, 1,
-          1, os.path.join(C_FOLDER_PATH, "mtm_buggy.c"), "yes"))
+    if pattern_mode == "1":
+        print(test_single_c_file(all_the_files_in_folder, os.path.join(c_folder, c_file), pattern_mode, hw_num, q_num))
+    elif pattern_mode == "2":
+        print(test_single_c_file(all_the_files_in_folder, os.path.join(c_folder, c_file), pattern_mode))
