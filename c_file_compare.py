@@ -141,6 +141,7 @@ def test_c_files(all_files_in_folder, all_files_c_folder, hw_number=None, questi
 
 
 if __name__ == '__main__':
+    #change
     all_the_files_in_folder = glob.glob(f"{TEST_FOLDER}*")
     all_the_files_c_folder = glob.glob(f"{C_FOLDER_PATH}*")
 
